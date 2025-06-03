@@ -1,41 +1,54 @@
-
 version: '3.8'
 
 services:
-  app:
-    build: .
-    ports:
-      - "8501:8501"
-    depends_on:
-      - db
-      - mlflow
-    environment:
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
-      - DB_HOST=db
-      - DB_NAME=yolo_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-
-  db:
-    image: postgres:14
-    restart: always
+  postgres:
+    image: postgres:13
     environment:
       POSTGRES_DB: yolo_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow
-    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns
+    image: python:3.9-slim
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    depends_on:
+      - postgres
     ports:
       - "5000:5000"
     volumes:
-      - ./mlruns:/mlruns
+      - ./mlflow:/mlflow
+    command: >
+      sh -c "pip install mlflow psycopg2-binary &&
+      mlflow server --backend-store-uri postgresql://postgres:postgres@postgres/yolo_db
+      --default-artifact-root /mlflow
+      --host 0.0.0.0"
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    volumes:
+      - ./app/utils:/app/utils
+    ports:
+      - "8501:8501"
+    environment:
+      - DB_HOST=postgres
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    stdin_open: true
+    tty: true
 
 volumes:
-  pgdata:
+  postgres_data:
