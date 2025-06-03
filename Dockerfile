@@ -3,15 +3,16 @@ FROM python:3.9-slim
 
 # Installer les dépendances système
 RUN apt-get update && apt-get install -y \
+    wget \
     libgl1 \
     libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /app/utils/models && \
+    && rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /app/utils/models && \
     cd /app/utils/models && \
     wget https://pjreddie.com/media/files/yolov3.weights && \
-    wget https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg?raw=true -O yolov3.cfg && \
-    wget https://github.com/pjreddie/darknet/blob/master/data/coco.names?raw=true -O coco.names
+    wget -O yolov3.cfg https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg && \
+    wget -O coco.names https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names
+
 # Créer et définir le répertoire de travail
 WORKDIR /app
 
