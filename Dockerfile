@@ -7,6 +7,11 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /app/utils/models && \
+    cd /app/utils/models && \
+    wget https://pjreddie.com/media/files/yolov3.weights && \
+    wget https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg?raw=true -O yolov3.cfg && \
+    wget https://github.com/pjreddie/darknet/blob/master/data/coco.names?raw=true -O coco.names
 # Créer et définir le répertoire de travail
 WORKDIR /app
 
