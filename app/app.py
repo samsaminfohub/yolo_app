@@ -7,9 +7,10 @@ import os
 import json
 from PIL import Image
 import pandas as pd
+from ultralytics import YOLO
 
 # Initialiser les composants
-detector = YOLODetector()
+model = YOLO("yolov8n.pt")
 db = Database()
 mlflow_logger = MLflowLogger()
 
@@ -35,7 +36,7 @@ if uploaded_file is not None:
     # Détection d'objets
     with st.spinner("Detecting objects..."):
         try:
-            results = detector.detect_objects(file_path)
+            results = model.detect_objects(file_path)
             
             # Enregistrer dans MLflow
             run_id = mlflow_logger.log_detection(
